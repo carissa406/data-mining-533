@@ -1,0 +1,173 @@
+raw_df = spark.read.option("header", "true").option("inferSchema","true").csv("/user/data/CSC533DM/titanic.csv")
+raw_df.show(2)
+raw_df.count()
+raw_df.printSchema()
+
+filtered_df = raw_df.select(["Survived", "Pclass", "Gender", "Age", "SibSp", "Parch", "Fare"])
+filtered_df.show()
+
+Assignment #1 - 4 (10pts per each column you choose, 40pts in total)
+Remove outliers from 4 different columns you choose (You may include ‘Fare’) in the dataset
+using Box and Whisker method. Choose at least three different columns that has (possible)
+outliers. For each column you choose,
+• Analyze the column to see whether it has outliers or not. Need outlier removal or not?
+Why?
+• Show how did you find outliers using the method in this exercise.
+
+After you removed all outliers from the columns you chose, redo Hands-on Ex 4-2 and evaluate
+the model you trained with the no-outliers dataset. Explain the differences you found, e.g.,
+AUROC and AUPR, between the model trained with outliers and the model trained with nooutliers dataset. Better or not?
+
+-----------------
+
+BUCKETIZER
+
+from pyspark.ml.feature import Bucketizer
+splits = [0.0, 100.0, 200.0, 300.0, 400.0, float("inf")]
+bucketizer = Bucketizer(splits = splits, inputCol="Fare", outputCol="bucketedFare")
+bucketed_df = bucketizer.transform(filtered_df)
+bucketed_df.select('Fare','bucketedFare').show()
+
+bucketed_df.groupBy('bucketedFare').count().orderBy('bucketedFare').show()
+
+----------------
+
+
+HOMEWORK:
+
+#reading in the data
+raw_df = spark.read.option("header", "true").option("inferSchema","true").csv("/user/data/CSC533DM/titanic.csv")
+filtered_df = raw_df.select(["Survived", "Pclass", "Gender", "Age", "SibSp", "Parch", "Fare"])
+filtered_df.show()
+
+#using the imputer class to deal with the missing values in the age column
+from pyspark.ml.feature import Imputer
+imputer=Imputer(strategy="mean", inputCols=["Age"],outputCols=["ImputedAge"])
+imputed_df = imputer.fit(filtered_df).transform(filtered_df)
+imputed_df.show()
+
+#encode gender
+from pyspark.ml.feature import StringIndexer, OneHotEncoderEstimator
+indexer = StringIndexer(inputCol="Gender",outputCol="IndexedGender")
+indexed_df = indexer.fit(imputed_df).transform(imputed_df)
+indexed_df.show(5)
+
+--------------------------------
+
+indexed_df = indexed_df.select(["Survived", "Pclass", "SibSp", "Parch", "Fare", "ImputedAge", "IndexedGender"])
+
+
+------------------------------------------------------------------------------------
+
+no_fare = indexed_df.filter(indexed_df.Fare == 0)
+no_fare.count()
+no_fare.show()
+
+
+QUANTILES FARE COLUMN
+
+#removing outliers from the fare column
+quantiles = indexed_df.approxQuantile("Fare", [0.25, 0.75], 0.0)
+Q1 = quantiles[0] #first quantile
+Q3 = quantiles[1] #third quantile
+IQR = Q3 - Q1
+
+lowerRange = Q1 - 1.5 * IQR
+lowerRange
+upperRange = Q3 + 1.5 * IQR
+upperRange
+
+#lower outliers  none
+outliers_low = indexed_df.filter(indexed_df.Fare < lowerRange)
+outliers_low.show()
+
+#upper outliers 
+outliers_upper = indexed_df.filter(indexed_df.Fare > upperRange)
+outliers_upper.show(15)
+
+#removing fare outliers
+outlier_free = indexed_df.filter((indexed_df.ImputedAge > lowerRange) & (indexed_df.ImputedAge < upperRange))
+--------------------
+
+IMPUTED AGE
+
+#removing outliers from age 
+quantiles = outlier_free.approxQuantile("ImputedAge", [0.25, 0.75], 0.0)
+Q1 = quantiles[0] #first quantile
+Q3 = quantiles[1] #third quantile
+IQR = Q3 - Q1
+
+lowerRange = Q1 - 1.5 * IQR
+lowerRange
+upperRange = Q3 + 1.5 * IQR
+upperRange
+
+#lower outliers
+outliers_low = outlier_free.filter(outlier_free.ImputedAge < lowerRange)
+outliers_low.count()
+outliers_low.show()
+
+#upper outliers 
+outliers_upper = outlier_free.filter(outlier_free.ImputedAge > upperRange)
+outliers_upper.count()
+outliers_upper.show()
+
+outlier_free = outlier_free.filter((outlier_free.ImputedAge > lowerRange) & (outlier_free.ImputedAge < upperRange))
+outlier_free.show()
+------------
+
+SIBLINGS
+
+quantiles = outlier_free.approxQuantile("SibSp", [0.25, 0.75], 0.0)
+Q1 = quantiles[0] #first quantile
+Q3 = quantiles[1] #third quantile
+IQR = Q3 - Q1
+
+lowerRange = Q1 - 1.5 * IQR
+lowerRange
+upperRange = Q3 + 1.5 * IQR
+upperRange
+
+#lower outliers
+outliers_low = outlier_free.filter(outlier_free.SibSp < lowerRange)
+outliers_low.count()
+outliers_low.show()
+
+#upper outliers 
+outliers_upper = outlier_free.filter(outlier_free.SibSp > upperRange)
+outliers_upper.count()
+outliers_upper.show()
+
+
+--------------------
+
+Parch
+
+quantiles = outlier_free.approxQuantile("Parch", [0.25, 0.75], 0.0)
+Q1 = quantiles[0] #first quantile
+Q3 = quantiles[1] #third quantile
+IQR = Q3 - Q1
+
+lowerRange = Q1 - 1.5 * IQR
+lowerRange
+upperRange = Q3 + 1.5 * IQR
+upperRange
+
+#lower outliers
+outliers_low = outlier_free.filter(outlier_free.Parch < lowerRange)
+outliers_low.count()
+outliers_low.show()
+
+#upper outliers 
+outliers_upper = outlier_free.filter(outlier_free.Parch > upperRange)
+outliers_upper.count()
+outliers_upper.show()
+
+-------------------------
+
+#redo assignment 4-2
+
+from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=['Pclass', 'SibSp', 'Parch', 'Fare', 'ImputedAge', 'IndexedGender'], outputCol='features')
+features_df = assembler.transform(outlier_free)
+features_df.select(['Survived', 'features']).show(10)
