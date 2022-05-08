@@ -1,0 +1,35 @@
+pyspark
+
+data = spark.read.format("libsvm").load("/user/data/CSC533DM/sample_kmeans_data.txt")
+data.show(truncate=False)
+
+--------------------
+define model k-means clustering using centroid based technique
+
+from pyspark.ml.clustering import KMeans
+kmeans = KMeans().setK(4).setSeed(1)
+model = kmeans.fit(data)
+
+----------------------------------
+make predictions
+
+predictions = model.transform(data) 
+predictions.show(truncate=False)
+
+--------------------------
+evaluate model using clusteringevaluator
+The metric computes the Silhouette measure using the specified distance measure.
+The Silhouette is a measure for the validation of the consistency within clusters. It ranges
+between 1 and -1, where a value close to 1 means that the points in a cluster are close to the other
+points in the same cluster and far from the points of the other clusters
+
+from pyspark.ml.evaluation import ClusteringEvaluator
+evaluator = ClusteringEvaluator()
+
+silhouette = evaluator.evaluate(predictions)
+print("Silhouette with squared euclidean distance = " + str(silhouette)) 
+
+cluster centers:
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers: print(center)

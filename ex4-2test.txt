@@ -1,0 +1,62 @@
+raw_df = spark.read.option("header", "true").option("inferSchema", "true").csv("/user/data/CSC533DM/titanic.csv")
+infer input schema automatically from the dataset
+same way to do ^ 
+raw_df = spark.read.csv("/user/data/CSC533DM/titanic.csv", header=True, inferSchema=True) 
+
+raw_df.count() 
+number of records
+
+raw_df.show(2, truncate=False)
+
+raw_df.describe().show()
+
+-------
+filter out unncessesary values
+filtered_df=raw_df.select(['Survived', 'Pclass', 'Gender', 'Age', 'SibSp', 'Parch', 'Fare'])
+filtered_df.show(2)
+
+------
+deal with missing age values by using the mean of age using Imputer
+from pyspark.ml.feature import Imputer
+imputer = Imputer(strategy='mean', inputCols=['Age'], outputCols=['ImputedAge'])
+imputed_df = imputer.fit(filtered_df).transform(filtered_df)
+imputed_df.show()
+
+encode gender bc ml algs can deal with categoricals
+from pyspark.ml.feature import StringIndexer, OneHotEncoderEstimator
+indexer = StringIndexer(inputCol="Gender",outputCol="IndexedGender")
+indexed_df = indexer.fit(imputed_df).transform(imputed_df)
+indexed_df.show(5)
+
+-------
+spark ml needs features vector and labels colums
+from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=['Pclass', 'SibSp', 'Parch', 'Fare', 'ImputedAge', 'IndexedGender'], outputCol='features')
+features_df = assembler.transform(indexed_df)
+features_df.show(10)
+features_df.select(['Survived', 'features']).show(10)
+
+---------
+
+#training and testing data
+(trainData, testData) = features_df.randomSplit([0.8, 0.2], seed=11)
+trainData.count()
+testData.count()
+
+----------
+#train model using randomforestclassifier
+from pyspark.ml.classification import RandomForestClassifier
+rf = RandomForestClassifier(labelCol="Survived", featuresCol="features")
+modelRF = rf.fit(trainData)
+
+predictions_df = modelRF.transform(testData)
+predictions_df.show(5)
+predictions_df.select(['Survived','features','probability','prediction']).show(5)
+
+----------
+
+from pyspark.ml.evaluation import BinaryClassificationEvaluator
+evaluator = BinaryClassificationEvaluator(labelCol="Survived", rawPredictionCol="prediction", metricName="areaUnderROC")
+evaluator.evaluate(predictions_df)
+evaluator1 = BinaryClassificationEvaluator(labelCol="Survived", rawPredictionCol="prediction", metricName="areaUnderPR")
+evaluator1.evaluate(predictions_df)

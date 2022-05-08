@@ -1,0 +1,63 @@
+from pyspark.sql.types import StructField, StructType, StringType, DoubleType, TimestampType
+from pyspark.sql.functions import unix_timestamp
+
+
+
+custom_schema = StructType([
+	StructField("Date/Time", TimestampType(), True),
+	StructField("Lat", DoubleType(), True),
+	StructField("Lon", DoubleType(), True),
+	StructField("Base", StringType(), True)])
+
+
+uber_df = spark.read.format("csv").option("header", "true").schema(custom_schema).option("timestampFormat", "MM/dd/yyyy hh:mm:ss").load("/user/data/CSC533DM/uber.csv")
+
+---------------------------------------------------------------
+
+from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=['Lat', 'Lon'], outputCol='features')
+features_df = assembler.transform(uber_df)
+features_df.show(5)
+
+----------------------------------------------------------------
+
+from pyspark.ml.clustering import KMeans
+kmeans = KMeans().setK(3).setSeed(1)
+model = kmeans.fit(features_df)
+
+predictions = model.transform(features_df)
+predictions.show()
+
+from pyspark.ml.evaluation import ClusteringEvaluator
+evaluator = ClusteringEvaluator()
+silhouette = evaluator.evaluate(predictions)
+print("Silhouette with squared euclidean distance = " + str(silhouette)) 
+
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers: print(center)
+---------------------------------------------------------------
+kmeans = KMeans().setK(5).setSeed(1)
+model = kmeans.fit(features_df)
+predictions = model.transform(features_df)
+predictions.show()
+silhouette = evaluator.evaluate(predictions)
+print("Silhouette with squared euclidean distance = " + str(silhouette)) 
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers: print(center)
+-----------------------------------------------------------------
+kmeans = KMeans().setK(8).setSeed(1)
+model = kmeans.fit(features_df)
+predictions = model.transform(features_df)
+predictions.show()
+silhouette = evaluator.evaluate(predictions)
+print("Silhouette with squared euclidean distance = " + str(silhouette)) 
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers: print(center)
+
+--------------------------------
+predictions.createOrReplaceTempView("8clusters")
+
+pickup_hours = spark.sql("""select count(Date/Time) as pickups from 8clusters group by Date/Time, order by Date/Time""")

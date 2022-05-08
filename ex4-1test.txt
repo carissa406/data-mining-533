@@ -1,0 +1,85 @@
+pyspark
+data =spark.read.format("libsvm").load("/user/data/CSC533DM/sample_libsvm_data.txt")
+
+#convert the strings into numbers, index class labels
+from pyspark.ml.feature import StringIndexer
+labelIndexer = StringIndexer(inputCol="label",outputCol="indexedLabel").fit(data)
+
+#helps index categorical features in dataset of vectors
+from pyspark.ml.feature import VectorIndexer
+featureIndexer = VectorIndexer(inputCol="features", outputCol="indexedFeatures",
+maxCategories=4).fit(data)
+
+#split data into training and testing sets 30% test
+(trainingData, testData) = data.randomSplit([0.7, 0.3])
+
+#train the dataset
+from pyspark.ml.classification import DecisionTreeClassifier
+dt = DecisionTreeClassifier(labelCol="indexedLabel",featuresCol="indexedFeatures")
+
+#pipeline is a sequence of stages, each stage is either a transformer or estimator
+from pyspark.ml import Pipeline
+pipeline = Pipeline(stages=[labelIndexer, featureIndexer, dt])
+
+#fit the model
+model = pipeline.fit(trainingData)
+
+#test the model
+predictions = model.transform(testData)
+
+#indexedLabel is the real label, prediction is the predicted label based on the indexedFeatures
+predictions.show(5)
+#to limit what we display in prediction results
+predictions.select("prediction", "indexedLabel", "features").show(5)
+
+#evaluating trained models
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+evaluator = MulticlassClassificationEvaluator(labelCol="indexedLabel",
+predictionCol="prediction", metricName="accuracy")
+#using accuracy as a metric for evaluating model
+
+#evaluating the predictions
+accuracy = evaluator.evaluate(predictions)
+print("Test Error = %g " % (1.0 - accuracy)) #prints the test error percentage
+
+----------------
+
+evaluator = MulticlassClassificationEvaluator(labelCol="indexedLabel",predictionCol="prediction", metricName="precision")
+
+precision = evaluator.evaluate(predictions)
+print("Test Error = %g " % (1.0 - precision))
+
+------------------------
+
+evaluator1 = MulticlassClassificationEvaluator(predictionCol='prediction', labelCol='label', metricName='f1')
+evaluator1.evaluate(predictions)
+
+evaluator2 = MulticlassClassificationEvaluator(predictionCol='prediction', labelCol='label', metricName='weightedPrecision')
+evaluator2.evaluate(predictions)
+
+evaluator3 = MulticlassClassificationEvaluator(predictionCol='prediction', labelCol='label', metricName='weightedRecall')
+evaluator3.evaluate(predictions)
+
+--------------------------------
+
+from pyspark.mllib.evaluation import BinaryClassificationMetrics, MulticlassMetrics
+
+predictionAndLabels = predictions.rdd
+
+metrics_binary = BinaryClassificationMetrics(predictionandLabel.rdd.map(tuple))
+metrics_multi = MulticlassMetrics(predictionandLabel.rdd.map(tuple))
+
+acc = metrics_multi.accuracy
+f1 = metrics_multi.fMeasure(1.0)
+precision = metrics_multi.precision(1.0)
+recall = metrics_multi.recall(1.0)
+auc = metrics_binary.areaUnderROC
+
+---------------
+ predictionandLabel
+ 
+ from pyspark.mllib.evaluation import MultilabelMetrics
+ 
+ metrics = MultilabelMetrics(predictionAndLabels)
+ 

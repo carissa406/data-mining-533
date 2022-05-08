@@ -1,0 +1,74 @@
+Replace chick7 with your login/NetID
+CREATE TABLE csc534.chick7_drivers (
+driverId INT,
+name STRING,
+ssn BIGINT,
+location STRING,
+certified STRING,
+wageplan STRING)
+COMMENT 'drivers'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+TBLPROPERTIES('skip.header.line.count'='1');
+
+CREATE TABLE csc534.chick7_timesheet (
+driverId INT,
+week INT,
+hours_logged INT,
+miles_logged INT)
+COMMENT 'timesheet'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+TBLPROPERTIES('skip.header.line.count'='1');
+
+CREATE TABLE csc534.chick7_truck_event (
+driverId INT,
+truckId INT,
+eventTime STRING,
+eventType STRING,
+longitude STRING,
+latitude STRING,
+eventKey BIGINT,
+CorrelationId BIGINT,
+driverName STRING,
+routID INT,
+routeName STRING,
+eventDate STRING)
+COMMENT 'truck event'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+TBLPROPERTIES('skip.header.line.count'='1');
+
+
+LOAD DATA LOCAL INPATH '/home/data/CSC534BDA/datasets/Truck-IoT/timesheet.csv'
+INTO TABLE csc534.chick7_timesheet;
+
+LOAD DATA LOCAL INPATH '/home/data/CSC534BDA/datasets/Truck-IoT/drivers.csv'
+INTO TABLE csc534.chick7_drivers;
+
+LOAD DATA LOCAL INPATH '/home/data/CSC534BDA/datasets/Truck-IoT/truck_event_text_partition.csv'
+INTO TABLE csc534.chick7_truck_event;
+
+
+SELECT * FROM csc534.chick7_drivers LIMIT 5;
+SELECT * FROM csc534.chick7_timesheet LIMIT 5;
+SELECT * FROM csc534.chick7_truck_event LIMIT 5;
+
+SELECT COUNT(*) FROM csc534.chick7_drivers LIMIT 5;
+SELECT COUNT(*) FROM csc534.chick7_timesheet LIMIT 5;
+SELECT COUNT(*) FROM csc534.chick7_truck_event LIMIT 5;
+
+SELECT driverId, sum(hours_logged), sum(miles_logged) FROM csc534.chick7_timesheet GROUP BY driverId;
+
+SELECT d.driverId, d.name, t.total_hours, t.total_miles
+ FROM csc534.chick7_drivers d
+ JOIN (SELECT driverId, sum(hours_logged)total_hours, sum(miles_logged)total_miles
+ FROM csc534.chick7_timesheet
+ GROUP BY driverId ) t
+ ON (d.driverId = t.driverId);
