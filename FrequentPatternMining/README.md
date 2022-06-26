@@ -37,6 +37,6 @@ Insights gained:
 - The most frequently purchased item is bananas
 - The most frequent 2 items purchased together are a combination of organic avocados, organic strawberries, and organic bananas
 - The top 5 items most frequently purchased together are organic avocados, organic strawberries, organic bananas, organic raspberries, and organic baby spinach
-- The top 10 purchases based on confidence are associated with organic bananas or bananas (if a person purchases strawberries, they are most likely purchasing bananas as well)
+- The top 10 purchases based on confidence are associated with organic bananas or bananas (if a person purchases strawberries, they are most likely purchasing bananas as well).
 
 ![A](https://github.com/carissa406/CSC533/blob/main/FrequentPatternMining/AssociationRules.PNG)
