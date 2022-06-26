@@ -1,4 +1,4 @@
-### Frequent Pattern Mining With Spark
+# Frequent Pattern Mining With Spark
 
 This was an assignment completed during my coursework at the Univeristy of Illinois at Springfield. The purpose of this analysis was to use the Instacart Online Grocery Shopping Dataset 2017 to mine for frequent patterns and discover association rules. https://www.instacart.com/datasets/grocery-shopping-2017
 
@@ -19,7 +19,7 @@ Data Description: https://www.p8105.com/dataset_instacart.html
 - aisle: the name of the aisle
 - department: the name of the department
 
-# Exploratory Data Analysis:
+### Exploratory Data Analysis:
 
 Insights gained:
 - Sunday is the most popular day for total orders
@@ -29,7 +29,7 @@ Insights gained:
 
 ![B](https://github.com/carissa406/CSC533/blob/main/FrequentPatternMining/mostPopularItemInABasket.PNG)
 
-# Model Training and Findings
+### Model Training and Findings
 
 The FPGrowth algorithm from Spark MLlib package was utilized to find the frequency of items that are associated with each other. 
 
