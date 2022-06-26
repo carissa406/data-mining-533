@@ -27,6 +27,8 @@ Insights gained:
 - Highest number of orders is at 10:00am
 - The deparments with the highest number of individual unique items are personal care and snacks
 
+![B](https://github.com/carissa406/CSC533/blob/main/FrequentPatternMining/mostPopularItemInABasket.PNG)
+
 # Model Training and Findings
 
 The FPGrowth algorithm from Spark MLlib package was utilized to find the frequency of items that are associated with each other. 
@@ -36,3 +38,5 @@ Insights gained:
 - The most frequent 2 items purchased together are a combination of organic avocados, organic strawberries, and organic bananas
 - The top 5 items most frequently purchased together are organic avocados, organic strawberries, organic bananas, organic raspberries, and organic baby spinach
 - The top 10 purchases based on confidence are associated with organic bananas or bananas (if a person purchases strawberries, they are most likely purchasing bananas as well)
+
+![A](https://github.com/carissa406/CSC533/blob/main/FrequentPatternMining/AssociationRules.PNG)
